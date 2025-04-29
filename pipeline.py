@@ -16,6 +16,7 @@ class Pipeline:
     def __init__(self, model_names, output_folder, dataset_path, sgl_clf, mtpl_clf, template_type="prompt_templates", top_k=10):
         self.model_names = model_names
         self.output_folder = output_folder
+        os.makedirs(output_folder, exist_ok=True)
         self.dataset_path = dataset_path
         self.template_type = template_type
         self.top_k = top_k
@@ -106,7 +107,7 @@ class Pipeline:
         print("Done")
 
 
-model_names = ["pythia-160m"]
+model_names = ["pythia-70m"]
 dataset_path = "landmarks_450.json"
 output_path = "exp12/"
 sgl_clf = DecisionTreeClassifier(min_samples_split=25)
