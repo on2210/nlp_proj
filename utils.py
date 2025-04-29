@@ -6,12 +6,13 @@ import pandas as pd
 import os
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.model_selection import cross_val_predict, StratifiedKFold
 from collections import defaultdict
 from typing import List, Dict
 import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib.backends.backend_pdf import PdfPages
 
+from matplotlib.backends.backend_pdf import PdfPages
 
 SINGLE_CONT = "_neurons_cont.csv"
 SINGLE_BINARY = "_neurons_bin.csv"
@@ -70,14 +71,16 @@ def extract_last_token_activations(activations):
     return torch.stack(last_token_activations)  # shape: [num_prompts, num_layers, hidden_size]
 
 
-def run_probe(X, y, clf, binary=False, t=-0.05):
+def run_probe(X, y, model, binary=False, t=0, folds=10):
     if binary:
         X = (X > t).float()
+    
     X = X.view(X.shape[0], -1).numpy()  # flatten to [num_prompts, num_layers * hidden_size]
     y = np.array(y)
-
-    clf.fit(X, y)
-    preds = clf.predict(X)
+    
+    cv = StratifiedKFold(n_splits=folds, shuffle=True)
+    preds = cross_val_predict(model, X, y, cv=cv)
+    
     acc = accuracy_score(y, preds)
     f_1 = f1_score(y, preds, average="weighted")
     return acc, f_1
