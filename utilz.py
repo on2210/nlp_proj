@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
+from typing import List, Dict
 from collections import defaultdict
 
 import matplotlib.pyplot as plt
@@ -61,12 +62,12 @@ class DatasetUtilz:
             return json.load(f)
 
     @staticmethod
-    def format_prompts(dataset: str, template_type: str) -> list[str]:
+    def format_prompts(dataset: str, template_type: str) -> List[str]:
         templates = dataset[template_type]
         return [template.format(sample["subject"]) for sample in dataset["samples"] for template in templates]
     
     @staticmethod
-    def get_labels_from_dataset(dataset_path: str, template_key: str) -> (np.ndarray, dict):
+    def get_labels_from_dataset(dataset_path: str, template_key: str) -> (np.ndarray, Dict):
         with open(dataset_path, 'r') as f:
             dataset = json.load(f)
 
@@ -101,7 +102,7 @@ class ProbeUtilz:
         return acc, f_1
 
     def evaluate_single_neurons(self, label, layer: int, layer_acts: torch.Tensor, labels: np.ndarray, topk_neurons: np.ndarray
-                                , probe, binary: bool = False) -> list[dict]:
+                                , probe, binary: bool = False) -> List[Dict]:
         results = [None] * topk_neurons.size
         for i, neuron in enumerate(topk_neurons):
             X = layer_acts[:, neuron].reshape(-1, 1)  # [num_samples, 1]
@@ -113,7 +114,7 @@ class ProbeUtilz:
         return results
 
     def evaluate_layer(self, label, layer: int, layer_acts: torch.Tensor, labels: np.ndarray
-                       , probe, binary: bool = False) -> dict:
+                       , probe, binary: bool = False) -> Dict:
         acc, f1 = self.run_probe(layer_acts, labels, probe, binary=binary)
         return {"label": label
                         , "layer": layer, "neuron": np.nan
@@ -121,7 +122,7 @@ class ProbeUtilz:
                         , "mode": binary, "method": 'Full Layer'}
 
     def evaluate_topk_in_layer(self, label, layer: int, layer_acts: torch.Tensor, labels: np.ndarray, topk_neurons: np.ndarray
-                               , probe, binary: bool = False) -> dict:
+                               , probe, binary: bool = False) -> Dict:
         X = layer_acts[:, topk_neurons]  # [num_samples, k]
         acc, f1 = self.run_probe(X, labels, probe, binary=binary)
         return {"label": label
@@ -129,7 +130,7 @@ class ProbeUtilz:
                         , "accuracy": acc, "f1": f1
                         , "mode": binary, "method": 'Top-K Neurons'}
 
-    def probe_three_ways(self, activations: torch.Tensor, labels: np.ndarray, label_map: dict, save_path: str, model_name: str
+    def probe_three_ways(self, activations: torch.Tensor, labels: np.ndarray, label_map: Dict, save_path: str, model_name: str
                          , sgl_clf, mtpl_clf, top_k: int, probe_type: str, output_folder: str):
         unique_labels = np.unique(labels)
         num_prompts, num_layers, hidden_size = activations.shape
@@ -183,6 +184,36 @@ class Report:
             pdf.savefig()
             plt.close()
     
+    def get_summary_table(data: pd.DataFrame, metric: str) -> pd.DataFrame:
+        summary = data.groupby(["method", "mode"]).agg(
+            mean=(metric, "mean"),
+            std=(metric, "std"),
+            max=(metric, "max")
+        )
+        
+        layer_means = data.groupby(["method", "mode", "layer"])[metric].mean().reset_index(name=f"layer_mean_{metric}")
+        indices = layer_means.groupby(["method", "mode"])[f"layer_mean_{metric}"].idxmax()
+        best_layers = layer_means.loc[indices, ["method", "mode", "layer"]]
+        best_layers = best_layers.rename(columns={"layer": "best_layer"})
+        summary = summary.merge(best_layers, on=["method", "mode"])
+        
+        comp_table = summary.reset_index().melt(
+            id_vars=["method", "mode"],
+            value_vars=["mean", "std", "max", "best_layer"],
+            var_name="metric",
+            value_name="score"
+            ).pivot_table(
+                index=["method", "metric"],
+                columns="mode",
+                values="score"
+            ).reset_index()
+
+        comp_table['metric'] = f'{metric}_' + comp_table['metric']
+        comp_table = comp_table.round(4)        
+        
+        comp_table.columns = [col.title() for col in comp_table.columns]
+        return comp_table
+        
     def plot_summary(pdf, data: pd.DataFrame, metric: str):
         plt.figure(figsize=(12, 6))
         sns.lineplot(data=data, x="layer", y=metric, hue="method", style="mode", markers=True, errorbar="se")
@@ -195,11 +226,7 @@ class Report:
         pdf.savefig()
         plt.close()
 
-        summary = data.groupby(["method", "mode"]).agg(
-            mean_f1=("f1", "mean"),
-            max_f1=("f1", "max"),
-            best_layer=("f1", lambda x: x.idxmax())
-        ).reset_index()
+        summary = Report.get_summary_table(data, metric)
 
         fig, ax = plt.subplots(figsize=(10, 3))
         ax.axis("off")
@@ -209,9 +236,10 @@ class Report:
             loc="center",
             cellLoc='center'
         )
+        
         table.auto_set_font_size(False)
         table.set_fontsize(10)
-        table.scale(1.2, 1.2)
+        table.scale(1.1, 1.1)
         plt.title(f"{metric.title()} Score Summary by Probing Method")
         pdf.savefig()
         plt.close()

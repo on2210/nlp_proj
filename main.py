@@ -1,5 +1,6 @@
 import sys
 import argparse
+from typing import Dict
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 
@@ -37,7 +38,7 @@ def die(msg: str):
     sys.exit(1)
 
 
-def parse_cmd_input(args) -> dict:
+def parse_cmd_input(args) -> Dict:
     params = {}
     
     try:

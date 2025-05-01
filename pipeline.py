@@ -2,6 +2,7 @@ import os
 import math
 import torch
 from tqdm import tqdm
+from typing import List
 from transformer_lens import HookedTransformer
 from transformer_lens.utils import get_act_name
 
@@ -14,7 +15,7 @@ KFOLDS = 5
 
 
 class Pipeline:
-    def __init__(self, model_names: list[str], output_folder: str, dataset_path: str, sgl_clf, mtpl_clf, probe_type: str
+    def __init__(self, model_names: List[str], output_folder: str, dataset_path: str, sgl_clf, mtpl_clf, probe_type: str
                  , is_task_global: bool, template_key="prompt_templates", top_k=10, is_tokenized: bool = False):
         """
         Initializes a Pipeline object for LLM probing.
@@ -85,7 +86,7 @@ class Pipeline:
     
     def save_activations(self, activations: torch.tensor, model_name: str, save_path: str):
         """
-        Saves a list of model activations into a .pt file.
+        Saves a tensor of model activations into a .pt file.
         :param activations: a torch.tensor model activations.
         :parma model_name: the name of the model.
         :param save_path: a path for saving activations.
@@ -93,9 +94,9 @@ class Pipeline:
         quantized = ActUtilz.quantize_activations(activations)
         torch.save(quantized, save_path)
     
-    def load_activations(self, model_name: str, save_path: str) -> list[torch.tensor]:
+    def load_activations(self, model_name: str, save_path: str) -> torch.tensor:
         """
-        Loads a list of model activations from a .pt file.
+        Loads a tensor of model activations from a .pt file.
         :parma model_name: the name of the model.
         :param save_path: the path for loading activations.
         """
@@ -111,8 +112,8 @@ class Pipeline:
         :param tokens: a torch.tensor with the tokens.
         :return: a tensor of shape (num_layers, d_model) with the layer activations.
         """
-        # Preallocating tensor of shape [num_layers, batch=1, seq_len, d_model]
-        layer_activations = torch.zeros((model.cfg.n_layers, 1, tokens.shape[0], model.cfg.d_mlp), dtype=torch.float16)
+        # Preallocating tensor of shape [num_layers, batch_size, seq_len, d_model]
+        layer_activations = torch.zeros((model.cfg.n_layers, 1, tokens.size()[0], model.cfg.d_mlp), dtype=torch.float16)
 
         # define hooks to save activations from each layer
         hooks = [(f'blocks.{layer_ix}.mlp.hook_post', ActUtilz.hook) for layer_ix in range(model.cfg.n_layers)]
@@ -133,7 +134,7 @@ class Pipeline:
     
     def get_activations_by_prompts(self, model) -> torch.tensor:
         """
-        Get activations of the model on a given list of textual prompts in the dataset.
+        Get activations of the model on a given sequence of textual prompts in the dataset.
         :param model: the model to get the activations of.
         :return: a tensor of shape (num_prompts, num_layers, d_model) with the layer activations for all prompts.
         """
@@ -152,7 +153,7 @@ class Pipeline:
     
     def get_activations_by_tokens(self, model) -> torch.tensor:
         """
-        Get activations of the model on a given list of tokenized textual prompts in the dataset.
+        Get activations of the model on a given sequence of tokenized textual prompts in the dataset.
         :param model: the model to get the activations of.
         :return: a tensor of shape (num_prompts, num_layers, d_model) with the layer activations for all tokenized prompts.
         """
