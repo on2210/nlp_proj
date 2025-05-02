@@ -113,7 +113,7 @@ class Pipeline:
         :return: a tensor of shape (num_layers, d_model) with the layer activations.
         """
         # Preallocating tensor of shape [num_layers, batch_size, seq_len, d_model]
-        layer_activations = torch.zeros((model.cfg.n_layers, 1, tokens.size()[0], model.cfg.d_mlp), dtype=torch.float16)
+        layer_activations = torch.zeros((model.cfg.n_layers, 1, tokens.numel(), model.cfg.d_mlp), dtype=torch.float16)
 
         # define hooks to save activations from each layer
         hooks = [(f'blocks.{layer_ix}.mlp.hook_post', ActUtilz.hook) for layer_ix in range(model.cfg.n_layers)]

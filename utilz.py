@@ -108,7 +108,7 @@ class ProbeUtilz:
             X = layer_acts[:, neuron].reshape(-1, 1)  # [num_samples, 1]
             acc, f1 = self.run_probe(X, labels, probe, binary=binary)
             results[i] = {"label": label
-                        , "layer": layer, "neuron": i
+                        , "layer": layer, "neuron": neuron
                         , "accuracy": acc, "f1": f1
                         , "mode": binary, "method": 'Single Neuron'}
         return results
