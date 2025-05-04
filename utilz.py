@@ -170,12 +170,13 @@ class ProbeUtilz:
         return results
 
 class Report:
-    def plot_per_method(pdf, data: pd.DataFrame, metric: str):
+    def plot_per_method(pdf, data: pd.DataFrame, metric: str, dataset_name: str = ""):
         for method in data["method"].unique():
             subset = data.loc[data["method"] == method]
             plt.figure(figsize=(10, 5))
             sns.lineplot(data=subset, x="layer", y=metric, hue="mode", markers=True, style="mode", errorbar="se")
-            plt.title(f"{metric.title()} per Layer – {method} Probing")
+            title_suffix = f"for {dataset_name}" if dataset_name else ""
+            plt.title(f"{metric.title()} per Layer – {method} Probing {title_suffix}")
             plt.xlabel("Layer")
             plt.ylabel(f"{metric.title()} [SE]")
             plt.grid(True)
@@ -214,10 +215,11 @@ class Report:
         comp_table.columns = [col.title() for col in comp_table.columns]
         return comp_table
         
-    def plot_summary(pdf, data: pd.DataFrame, metric: str):
+    def plot_summary(pdf, data: pd.DataFrame, metric: str, dataset_name: str = ""):
         plt.figure(figsize=(12, 6))
         sns.lineplot(data=data, x="layer", y=metric, hue="method", style="mode", markers=True, errorbar="se")
-        plt.title(f"Overall {metric.title()} per Layer – All Methods")
+        title_suffix = f"for {dataset_name}" if dataset_name else ""
+        plt.title(f"Overall {metric.title()} per Layer – All Methods {title_suffix}")
         plt.xlabel("Layer")
         plt.ylabel(f"{metric.title()} Score [SE]")
         plt.grid(True)
@@ -244,12 +246,12 @@ class Report:
         pdf.savefig()
         plt.close()
     
-    def generate_report(output_folder: str, model_name: str, probe_type: str):
+    def generate_report(output_folder: str, model_name: str, probe_type: str, dataset_name: str = ""):
         pdf_path = f'{output_folder}{model_name}_{probe_type}_f1_acc_report.pdf'
         data = pd.read_csv(f'{output_folder}{model_name}_{probe_type}_probing_results.csv')
         with PdfPages(pdf_path) as pdf:
             for metric in ['f1', 'accuracy']:
-                Report.plot_per_method(pdf, data, metric)
-                Report.plot_summary(pdf, data, metric)
+                Report.plot_per_method(pdf, data, metric, dataset_name)
+                Report.plot_summary(pdf, data, metric, dataset_name)
 
         print(f"Extended PDF report with accuracy saved to: {pdf_path}")
