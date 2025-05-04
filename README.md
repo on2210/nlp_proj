@@ -1,6 +1,6 @@
 # LLM Probing Pipeline 🚀
 
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/) [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/) 
 
 A reproducible pipeline for probing neural activations of Pythia language models using classification probes. Compute and cache model activations, run single-neuron and layer-wise probes, and generate comprehensive performance reports.
 
@@ -24,27 +24,6 @@ A reproducible pipeline for probing neural activations of Pythia language models
 ├── utilz.py                # Utilities: hooks, data loaders, plotting, etc.
 ├── requirements.txt        # Python dependencies
 └── README.md               # This file
-```
-
----
-
-## ⚙️ Prerequisites
-
-* **Python**: 3.8 or higher
-* **Hardware**: CUDA-enabled GPU *(optional, falls back to CPU)*
-* **Environment**: Virtual environment (recommended)
-
-### Install
-
-```bash
-# Create & activate virtual environment
-python -m venv .venv
-source .venv/bin/activate   # macOS/Linux
-.venv\\Scripts\\activate  # Windows
-
-# Install dependencies
-pip install --upgrade pip
-pip install -r requirements.txt
 ```
 
 ---
@@ -94,40 +73,6 @@ python main.py --n_models 1 --dataset landmarks --probe_type lr --top_k 10
 * **Results CSV**: `<dataset>/{model_name}_{probe_type}_probing_results.csv`
 * **PDF Report**: `<dataset>/{model_name}_{probe_type}_f1_acc_report.pdf` (includes F1 & accuracy plots)
 
----
-
-## 🛠️ Reproducibility
-
-1. **Random Seeds**: Use fixed seeds in PyTorch (`torch.manual_seed`) and scikit-learn (`random_state`) to ensure deterministic results.
-2. **Environment Capture**:
-
-   ```bash
-   pip freeze > requirements.txt
-   ```
-3. **GPU Control**: To force CPU-only:
-
-   ```bash
-   export CUDA_VISIBLE_DEVICES=""
-   ```
-4. **Data Versioning**: Commit your JSON files to git to lock dataset versions.
-5. **Clean Runs**: Remove or rename the output `<dataset>/` folder to rerun end-to-end.
-
----
-
-## 🔧 Extending the Pipeline
-
-* **Add Models**: Update the `MODELS` list in `main.py`.
-* **Add Datasets**: Extend `DATASET_PATHS` & related mappings in `main.py` and add JSON files.
-* **Custom Probes**: Implement new classifiers under `utilz.py` and adjust argument parsing.
-
----
-
 ## 📫 Contributing & Support
 
-Feel free to open issues or pull requests. For questions, reach out via GitHub issues or email the maintainer.
-
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
+Feel free to open issues or pull requests. For questions, reach out via GitHub issues or email us at danielvered@mail.tau.ac.il or omernaziri1@mail.tau.ac.il.
